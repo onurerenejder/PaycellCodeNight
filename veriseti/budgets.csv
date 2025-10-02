@@ -1,0 +1,3 @@
+user_id,month,category,limit_amount,spent_amount
+U1,2025-10,cafe,200.0,120.0
+U1,2025-10,market,300.0,50.0

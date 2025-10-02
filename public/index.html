@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="tr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dijital Ödeme Sistemi</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+
+<body>
+    <!-- Loading Spinner -->
+    <div id="loading" class="loading hidden">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Login Screen -->
+    <div id="loginScreen" class="screen">
+        <div class="login-container">
+            <div class="login-card">
+                <div class="logo">
+                    <i class="fas fa-wallet"></i>
+                    <h1>Dijital Ödeme Sistemi</h1>
+                </div>
+
+                <form id="loginForm" class="login-form">
+                    <div class="input-group">
+                        <label for="userId">Kullanıcı ID</label>
+                        <input type="text" id="userId" name="userId" placeholder="Örn: U1, U2, U3" required
+                            autocomplete="off">
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-sign-in-alt"></i>
+                        Giriş Yap
+                    </button>
+                </form>
+
+                <div class="demo-users">
+                    <h3>Demo Kullanıcılar:</h3>
+                    <div class="demo-user-list">
+                        <div class="demo-user" data-user-id="U1">
+                            <strong>U1</strong> - Ayşe (250 TL)
+                        </div>
+                        <div class="demo-user" data-user-id="U2">
+                            <strong>U2</strong> - Ali (90 TL)
+                        </div>
+                        <div class="demo-user" data-user-id="U3">
+                            <strong>U3</strong> - Deniz (30 TL)
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Dashboard -->
+    <div id="dashboardScreen" class="screen hidden">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo-small">
+                    <i class="fas fa-wallet"></i>
+                    <span>Dijital Ödeme</span>
+                </div>
+
+                <div class="user-info">
+                    <span id="userName">Kullanıcı</span>
+                    <button id="logoutBtn" class="btn btn-secondary">
+                        <i class="fas fa-sign-out-alt"></i>
+                        Çıkış
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Balance Card -->
+            <div class="balance-card">
+                <div class="balance-info">
+                    <h2>Cüzdan Bakiyesi</h2>
+                    <div class="balance-amount">
+                        <span id="balanceAmount">0.00 TL</span>
+                        <button id="refreshBalance" class="btn-icon">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="balance-actions">
+                    <button id="topUpBtn" class="btn btn-success">
+                        <i class="fas fa-plus"></i>
+                        Bakiye Yükle
+                    </button>
+                </div>
+            </div>
+
+            <!-- Action Tabs -->
+            <div class="tabs">
+                <button class="tab-btn active" data-tab="transfer">
+                    <i class="fas fa-exchange-alt"></i>
+                    Para Transferi
+                </button>
+                <button class="tab-btn" data-tab="qr">
+                    <i class="fas fa-qrcode"></i>
+                    QR Ödeme
+                </button>
+                <button class="tab-btn" data-tab="budgets">
+                    <i class="fas fa-chart-pie"></i>
+                    Bütçe
+                </button>
+                <button class="tab-btn" data-tab="splits">
+                    <i class="fas fa-receipt"></i>
+                    Fatura Bölme
+                </button>
+                <button class="tab-btn" data-tab="history">
+                    <i class="fas fa-history"></i>
+                    Geçmiş
+                </button>
+            </div>
+
+            <!-- Tab Contents -->
+            <div class="tab-content">
+                <!-- Transfer Tab -->
+                <div id="transferTab" class="tab-pane active">
+                    <div class="card">
+                        <h3>Para Transferi</h3>
+                        <form id="transferForm">
+                            <div class="input-group">
+                                <label for="transferToUserId">Alıcı Kullanıcı ID</label>
+                                <input type="text" id="transferToUserId" name="toUserId" placeholder="Örn: U2" required>
+                            </div>
+
+                            <div class="input-group">
+                                <label for="transferAmount">Tutar (TL)</label>
+                                <input type="number" id="transferAmount" name="amount" placeholder="0.00" step="0.01"
+                                    min="0.01" required>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-paper-plane"></i>
+                                Transfer Et
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- QR Payment Tab -->
+                <div id="qrTab" class="tab-pane">
+                    <div class="card">
+                        <h3>QR Kod ile Ödeme</h3>
+                        <p class="text-secondary">QR kod ID'sini girin</p>
+
+                        <form id="qrPaymentForm">
+                            <div class="input-group">
+                                <label for="qrIdInput">QR Kod ID</label>
+                                <input type="text" id="qrIdInput" name="qrId" placeholder="Örn: QR-M1-001" required>
+                            </div>
+
+                            <div class="qr-info" id="qrInfo" style="display: none;">
+                                <div class="qr-preview-header">
+                                    <i class="fas fa-check-circle"></i>
+                                    <span>QR Kod Bulundu</span>
+                                </div>
+                                <div class="qr-info-item">
+                                    <span class="label">İşyeri:</span>
+                                    <span id="qrMerchant" class="value"></span>
+                                </div>
+                                <div class="qr-info-item">
+                                    <span class="label">Açıklama:</span>
+                                    <span id="qrDescription" class="value"></span>
+                                </div>
+                                <div class="qr-info-item">
+                                    <span class="label">Tutar:</span>
+                                    <span id="qrAmount" class="value amount-highlight"></span>
+                                </div>
+                            </div>
+
+                            <div class="button-group">
+                                <button type="button" id="searchQRBtn" class="btn btn-outline">
+                                    <i class="fas fa-search"></i>
+                                    QR Kodu Ara
+                                </button>
+                                <button type="submit" class="btn btn-primary" disabled id="qrPayBtn">
+                                    <i class="fas fa-credit-card"></i>
+                                    Ödeme Yap
+                                </button>
+                            </div>
+                        </form>
+
+                        <!-- Sample QR Codes -->
+                        <div class="card" style="margin-top: 20px; background: #f8fafc;">
+                            <h4>Kullanılabilir QR Kodlar:</h4>
+                            <div class="sample-qr-list">
+                                <div class="sample-qr-item">
+                                    <div class="qr-sample-info">
+                                        <strong>QR-M1-001</strong>
+                                        <span>Kampüs Kafe - 25.50 TL</span>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline use-qr-id"
+                                        data-qr-id="QR-M1-001">
+                                        <i class="fas fa-arrow-right"></i>
+                                        Kullan
+                                    </button>
+                                </div>
+                                <div class="sample-qr-item">
+                                    <div class="qr-sample-info">
+                                        <strong>QR-M1-002</strong>
+                                        <span>Kampüs Kafe - 12.75 TL</span>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline use-qr-id"
+                                        data-qr-id="QR-M1-002">
+                                        <i class="fas fa-arrow-right"></i>
+                                        Kullan
+                                    </button>
+                                </div>
+                                <div class="sample-qr-item">
+                                    <div class="qr-sample-info">
+                                        <strong>QR-M2-001</strong>
+                                        <span>Kampüs Market - 45.00 TL</span>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline use-qr-id"
+                                        data-qr-id="QR-M2-001">
+                                        <i class="fas fa-arrow-right"></i>
+                                        Kullan
+                                    </button>
+                                </div>
+                                <div class="sample-qr-item">
+                                    <div class="qr-sample-info">
+                                        <strong>QR-M2-002</strong>
+                                        <span>Kampüs Market - 32.50 TL</span>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline use-qr-id"
+                                        data-qr-id="QR-M2-002">
+                                        <i class="fas fa-arrow-right"></i>
+                                        Kullan
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Budgets Tab -->
+                <div id="budgetsTab" class="tab-pane">
+                    <!-- Month Selector -->
+                    <div class="card">
+                        <div class="month-selector">
+                            <button id="prevMonthBtn" class="btn btn-icon">
+                                <i class="fas fa-chevron-left"></i>
+                            </button>
+                            <div class="current-month">
+                                <span id="currentMonthDisplay">Ekim 2025</span>
+                            </div>
+                            <button id="nextMonthBtn" class="btn btn-icon">
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Budget Summary -->
+                    <div class="card">
+                        <h3>Aylık Bütçe Özeti</h3>
+                        <div id="budgetSummary" class="budget-summary">
+                            <div class="budget-overview">
+                                <div class="overview-item">
+                                    <span class="label">Cüzdan Bakiyesi</span>
+                                    <span id="totalBudget" class="value">0.00 TL</span>
+                                </div>
+                                <div class="overview-item">
+                                    <span class="label">Bu Ay Harcanan</span>
+                                    <span id="totalSpent" class="value">0.00 TL</span>
+                                </div>
+                                <div class="overview-item">
+                                    <span class="label">Kalan Bakiye</span>
+                                    <span id="totalRemaining" class="value">0.00 TL</span>
+                                </div>
+                            </div>
+                            <div class="budget-progress">
+                                <div class="progress-bar-container">
+                                    <div id="totalProgressBar" class="progress-bar" style="width: 0%;"></div>
+                                </div>
+                                <span id="totalPercentage" class="percentage">0%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Budget Settings -->
+                    <div class="card">
+                        <h3>Kategori Bazlı Uyarı Ayarları</h3>
+                        <p class="text-secondary">Her kategori için farklı eşik değerleri belirleyin</p>
+                        <div id="categoryThresholds" class="category-thresholds">
+                            <!-- Will be populated dynamically -->
+                        </div>
+                        <button id="resetThresholdsBtn" class="btn btn-outline" style="margin-top: 15px;">
+                            <i class="fas fa-undo"></i>
+                            Varsayılana Sıfırla
+                        </button>
+                    </div>
+
+                    <!-- Add Budget -->
+                    <div class="card">
+                        <h3>Yeni Bütçe Ekle</h3>
+                        <form id="addBudgetForm">
+                            <div class="input-group">
+                                <label for="budgetMonth">Ay</label>
+                                <input type="month" id="budgetMonth" name="month" required>
+                            </div>
+
+                            <div class="input-group">
+                                <label for="budgetCategory">Kategori</label>
+                                <select id="budgetCategory" name="category" required>
+                                    <option value="">Kategori Seçin</option>
+                                    <option value="cafe">Kafe</option>
+                                    <option value="market">Market</option>
+                                    <option value="ulaşım">Ulaşım</option>
+                                    <option value="eğlence">Eğlence</option>
+                                    <option value="sağlık">Sağlık</option>
+                                    <option value="diğer">Diğer</option>
+                                </select>
+                            </div>
+
+                            <div class="input-group">
+                                <label for="budgetLimit">Bütçe Limiti (TL)</label>
+                                <input type="number" id="budgetLimit" name="limitAmount" placeholder="0.00" step="0.01"
+                                    min="0.01" required>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-plus"></i>
+                                Bütçe Ekle
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Active Budgets -->
+                    <div class="card">
+                        <h3>Kategoriye Göre Bütçeler</h3>
+                        <div id="budgetsList" class="budgets-list">
+                            <!-- Will be populated by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Bill Splits Tab -->
+                <div id="splitsTab" class="tab-pane">
+                    <!-- Split Summary -->
+                    <div class="card">
+                        <h3>Fatura Bölme Özeti</h3>
+                        <div id="splitSummary" class="split-summary">
+                            <div class="summary-item">
+                                <span class="label">Bana Borçlu:</span>
+                                <span id="owedToMe" class="amount positive">0.00 TL</span>
+                            </div>
+                            <div class="summary-item">
+                                <span class="label">Benim Borcum:</span>
+                                <span id="iOwe" class="amount negative">0.00 TL</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Create Split -->
+                    <div class="card">
+                        <h3>Yeni Fatura Bölme</h3>
+                        <div class="split-type-selector">
+                            <button class="btn btn-outline active" data-split-type="equal">
+                                <i class="fas fa-equals"></i>
+                                Eşit Bölme
+                            </button>
+                            <button class="btn btn-outline" data-split-type="weighted">
+                                <i class="fas fa-weight"></i>
+                                Ağırlıklı Bölme
+                            </button>
+                        </div>
+
+                        <!-- Equal Split Form -->
+                        <form id="equalSplitForm" class="split-form">
+                            <div class="input-group">
+                                <label for="equalTxId">İşlem ID (Ödenen Fatura)</label>
+                                <input type="text" id="equalTxId" name="originalTxId" placeholder="TX_PAY_..." required>
+                            </div>
+
+                            <div class="input-group">
+                                <label for="equalDebtors">Borçlu Kullanıcı ID'leri (virgülle ayırın)</label>
+                                <input type="text" id="equalDebtors" name="debtorUserIds" placeholder="U2,U3" required>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-cut"></i>
+                                Eşit Böl
+                            </button>
+                        </form>
+
+                        <!-- Weighted Split Form -->
+                        <form id="weightedSplitForm" class="split-form hidden">
+                            <div class="input-group">
+                                <label for="weightedTxId">İşlem ID (Ödenen Fatura)</label>
+                                <input type="text" id="weightedTxId" name="originalTxId" placeholder="TX_PAY_..."
+                                    required>
+                            </div>
+
+                            <div id="weightedDebtors" class="weighted-debtors">
+                                <label>Borçlu Kullanıcılar ve Ağırlıkları:</label>
+                                <div class="debtor-entry">
+                                    <input type="text" placeholder="Kullanıcı ID (örn: U2)" class="debtor-user-id"
+                                        required>
+                                    <input type="number" placeholder="Ağırlık" class="debtor-weight" step="0.1"
+                                        min="0.1" required>
+                                    <button type="button" class="btn-icon remove-debtor">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <button type="button" id="addDebtorBtn" class="btn btn-outline">
+                                <i class="fas fa-plus"></i>
+                                Borçlu Ekle
+                            </button>
+
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-balance-scale"></i>
+                                Ağırlıklı Böl
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Active Splits -->
+                    <div class="card">
+                        <h3>Aktif Fatura Bölmeleri</h3>
+                        <div id="activeSplits" class="splits-list">
+                            <!-- Will be populated by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- History Tab -->
+                <div id="historyTab" class="tab-pane">
+                    <div class="card">
+                        <h3>İşlem Geçmişi</h3>
+                        <div id="transactionHistory" class="transaction-list">
+                            <!-- Will be populated by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Top Up Modal -->
+    <div id="topUpModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Bakiye Yükle</h3>
+                <button class="modal-close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <form id="topUpForm" class="modal-body">
+                <div class="input-group">
+                    <label for="topUpAmount">Yüklenecek Tutar (TL)</label>
+                    <input type="number" id="topUpAmount" name="amount" placeholder="0.00" step="0.01" min="0.01"
+                        required>
+                </div>
+
+                <div class="quick-amounts">
+                    <button type="button" class="btn btn-outline quick-amount" data-amount="50">50 TL</button>
+                    <button type="button" class="btn btn-outline quick-amount" data-amount="100">100 TL</button>
+                    <button type="button" class="btn btn-outline quick-amount" data-amount="200">200 TL</button>
+                    <button type="button" class="btn btn-outline quick-amount" data-amount="500">500 TL</button>
+                </div>
+            </form>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary modal-close">İptal</button>
+                <button type="submit" form="topUpForm" class="btn btn-success">
+                    <i class="fas fa-plus"></i>
+                    Yükle
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Receipt Modal -->
+    <div id="receiptModal" class="modal hidden">
+        <div class="modal-content receipt-modal">
+            <div class="modal-header">
+                <h3><i class="fas fa-receipt"></i> Ödeme Fişi</h3>
+                <button class="modal-close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <div class="modal-body receipt-body">
+                <div class="receipt-header">
+                    <div class="receipt-logo">
+                        <i class="fas fa-qrcode"></i>
+                    </div>
+                    <h2>Dijital Ödeme Sistemi</h2>
+                    <p class="receipt-subtitle">Ödeme Makbuzu</p>
+                </div>
+
+                <div class="receipt-divider"></div>
+
+                <div class="receipt-section">
+                    <div class="receipt-row">
+                        <span class="label">İşlem No:</span>
+                        <span class="value" id="receiptTxId">-</span>
+                    </div>
+                    <div class="receipt-row">
+                        <span class="label">Tarih:</span>
+                        <span class="value" id="receiptDate">-</span>
+                    </div>
+                    <div class="receipt-row">
+                        <span class="label">Saat:</span>
+                        <span class="value" id="receiptTime">-</span>
+                    </div>
+                </div>
+
+                <div class="receipt-divider"></div>
+
+                <div class="receipt-section">
+                    <div class="receipt-row">
+                        <span class="label">İşyeri:</span>
+                        <span class="value" id="receiptMerchant">-</span>
+                    </div>
+                    <div class="receipt-row" id="receiptQRRow" style="display: none;">
+                        <span class="label">QR Kod:</span>
+                        <span class="value" id="receiptQRId">-</span>
+                    </div>
+                    <div class="receipt-row">
+                        <span class="label">Müşteri:</span>
+                        <span class="value" id="receiptCustomer">-</span>
+                    </div>
+                </div>
+
+                <div class="receipt-divider"></div>
+
+                <div class="receipt-section receipt-amount-section">
+                    <div class="receipt-row receipt-total">
+                        <span class="label">Toplam Tutar:</span>
+                        <span class="value amount" id="receiptAmount">0.00 TL</span>
+                    </div>
+                    <div class="receipt-row">
+                        <span class="label">Ödeme Yöntemi:</span>
+                        <span class="value" id="receiptMethod">Dijital Cüzdan</span>
+                    </div>
+                    <div class="receipt-row success-row">
+                        <i class="fas fa-check-circle"></i>
+                        <span>Ödeme Başarılı</span>
+                    </div>
+                </div>
+
+                <div class="receipt-divider"></div>
+
+                <div class="receipt-footer">
+                    <p>Bizi tercih ettiğiniz için teşekkür ederiz</p>
+                    <p class="receipt-footer-small">Bu fiş elektronik ortamda oluşturulmuştur</p>
+                </div>
+            </div>
+
+            <div class="modal-footer">
+                <button type="button" class="btn btn-outline modal-close">Kapat</button>
+                <button type="button" id="printReceiptBtn" class="btn btn-primary">
+                    <i class="fas fa-print"></i>
+                    Yazdır
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="toast hidden">
+        <div class="toast-content">
+            <i class="toast-icon"></i>
+            <span class="toast-message"></span>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+
+</html>
