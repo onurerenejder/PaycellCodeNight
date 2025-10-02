@@ -1194,6 +1194,97 @@ textarea:focus {
     background: var(--error-color);
 }
 
+/* Cashback Campaigns */
+.cashback-campaigns {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.cashback-campaigns h3 {
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.campaigns-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 15px;
+}
+
+.campaign-item {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    padding: 15px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(10px);
+    transition: var(--transition);
+}
+
+.campaign-item:hover {
+    background: rgba(255, 255, 255, 0.25);
+    transform: translateY(-2px);
+}
+
+.campaign-icon {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    color: white;
+}
+
+.campaign-details {
+    flex: 1;
+}
+
+.campaign-title {
+    font-weight: 600;
+    font-size: 15px;
+    margin-bottom: 6px;
+    color: white;
+}
+
+.campaign-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    opacity: 0.9;
+}
+
+.badge {
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.badge-special {
+    background: rgba(255, 215, 0, 0.3);
+    color: #ffd700;
+    border: 1px solid rgba(255, 215, 0, 0.5);
+}
+
+.campaign-validity {
+    opacity: 0.8;
+}
+
+.campaign-badge {
+    font-size: 24px;
+    color: rgba(255, 255, 255, 0.5);
+}
+
 /* Modal */
 .modal {
     position: fixed;

@@ -149,6 +149,14 @@
 
                 <!-- QR Payment Tab -->
                 <div id="qrTab" class="tab-pane">
+                    <!-- Active Cashback Campaigns -->
+                    <div class="card cashback-campaigns">
+                        <h3><i class="fas fa-gift"></i> Aktif Cashback Kampanyaları</h3>
+                        <div id="cashbackCampaigns" class="campaigns-list">
+                            <!-- Will be populated by JavaScript -->
+                        </div>
+                    </div>
+
                     <div class="card">
                         <h3>QR Kod ile Ödeme</h3>
                         <p class="text-secondary">QR kod ID'sini girin</p>
@@ -542,6 +550,13 @@
                     <div class="receipt-row receipt-total">
                         <span class="label">Toplam Tutar:</span>
                         <span class="value amount" id="receiptAmount">0.00 TL</span>
+                    </div>
+                    <div class="receipt-row" id="receiptCashbackRow" style="display: none;">
+                        <span class="label">
+                            <i class="fas fa-gift"></i>
+                            Cashback:
+                        </span>
+                        <span class="value" id="receiptCashback" style="color: var(--success-color);">0.00 TL</span>
                     </div>
                     <div class="receipt-row">
                         <span class="label">Ödeme Yöntemi:</span>

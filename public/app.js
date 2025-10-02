@@ -315,6 +315,8 @@ class DigitalPaymentApp {
             this.loadActiveSplits();
         } else if (tabName === 'budgets') {
             this.loadBudgets();
+        } else if (tabName === 'qr') {
+            this.loadCashbackCampaigns();
         }
     }
 
@@ -430,7 +432,12 @@ class DigitalPaymentApp {
             });
 
             if (response.success) {
-                this.showToast(response.message, 'success');
+                // Show cashback message if available
+                if (response.data.cashback && response.data.cashback.applied) {
+                    this.showToast(`${response.message} 🎉 ${response.data.cashback.message}`, 'success');
+                } else {
+                    this.showToast(response.message, 'success');
+                }
 
                 // Save current QR info for receipt
                 const receiptData = {
@@ -440,7 +447,8 @@ class DigitalPaymentApp {
                     amount: this.currentQRInfo.amount,
                     currency: this.currentQRInfo.currency || 'TRY',
                     description: this.currentQRInfo.description,
-                    timestamp: new Date()
+                    timestamp: new Date(),
+                    cashback: response.data.cashback
                 };
 
                 // Reset form
@@ -450,6 +458,7 @@ class DigitalPaymentApp {
                 this.currentQRInfo = null;
 
                 await this.loadBalance();
+                await this.loadCashbackCampaigns(); // Refresh campaigns
 
                 // Show receipt
                 this.showReceipt(receiptData);
@@ -1007,8 +1016,75 @@ class DigitalPaymentApp {
             document.getElementById('receiptQRRow').style.display = 'none';
         }
 
+        // Show cashback if available
+        if (receiptData.cashback && receiptData.cashback.applied && receiptData.cashback.cashbackAmount > 0) {
+            document.getElementById('receiptCashbackRow').style.display = 'flex';
+            document.getElementById('receiptCashback').textContent =
+                `+${receiptData.cashback.cashbackAmount.toFixed(2)} ${receiptData.currency}`;
+        } else {
+            document.getElementById('receiptCashbackRow').style.display = 'none';
+        }
+
         // Show modal
         document.getElementById('receiptModal').classList.remove('hidden');
+    }
+
+    /**
+     * Load active cashback campaigns
+     */
+    async loadCashbackCampaigns() {
+        try {
+            const response = await fetch(`${this.apiBaseUrl}/cashback/campaigns`);
+            const result = await response.json();
+
+            if (result.success) {
+                this.renderCashbackCampaigns(result.data.campaigns);
+            }
+
+        } catch (error) {
+            console.error('Load cashback campaigns error:', error);
+        }
+    }
+
+    /**
+     * Render cashback campaigns
+     */
+    renderCashbackCampaigns(campaigns) {
+        const container = document.getElementById('cashbackCampaigns');
+
+        if (campaigns.length === 0) {
+            container.innerHTML = '<p class="text-center text-secondary">Aktif kampanya yok</p>';
+            return;
+        }
+
+        container.innerHTML = campaigns.map(campaign => {
+            const categoryIcons = {
+                'cafe': 'fa-coffee',
+                'market': 'fa-shopping-cart',
+                'any': 'fa-star'
+            };
+
+            const icon = categoryIcons[campaign.category] || 'fa-gift';
+            const endsAt = campaign.endsAt ? new Date(campaign.endsAt).toLocaleDateString('tr-TR') : 'Süresiz';
+
+            return `
+                <div class="campaign-item">
+                    <div class="campaign-icon">
+                        <i class="fas ${icon}"></i>
+                    </div>
+                    <div class="campaign-details">
+                        <div class="campaign-title">${campaign.description}</div>
+                        <div class="campaign-info">
+                            ${campaign.firstTimeOnly ? '<span class="badge badge-special">İlk Ödeme</span>' : ''}
+                            <span class="campaign-validity">Son: ${endsAt}</span>
+                        </div>
+                    </div>
+                    <div class="campaign-badge">
+                        <i class="fas fa-gift"></i>
+                    </div>
+                </div>
+            `;
+        }).join('');
     }
 
     /**

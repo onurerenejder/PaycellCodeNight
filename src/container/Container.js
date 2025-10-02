@@ -13,10 +13,12 @@ const AuthService = require('../services/AuthService');
 const PaymentService = require('../services/PaymentService');
 const BillSplitService = require('../services/BillSplitService');
 const BudgetService = require('../services/BudgetService');
+const CashbackService = require('../services/CashbackService');
 const AuthController = require('../controllers/AuthController');
 const PaymentController = require('../controllers/PaymentController');
 const BillSplitController = require('../controllers/BillSplitController');
 const BudgetController = require('../controllers/BudgetController');
+const CashbackController = require('../controllers/CashbackController');
 
 class Container {
     constructor() {
@@ -51,7 +53,10 @@ class Container {
 
             // Services
             const authService = new AuthService(userRepository);
+            const cashbackService = new CashbackService(database, walletRepository, transactionRepository);
             const paymentService = new PaymentService(walletRepository, transactionRepository);
+            paymentService.setCashbackService(cashbackService); // Inject after creation to avoid circular dependency
+
             const billSplitService = new BillSplitService(
                 billSplitRepository,
                 transactionRepository,
@@ -64,17 +69,20 @@ class Container {
             this.services.set('paymentService', paymentService);
             this.services.set('billSplitService', billSplitService);
             this.services.set('budgetService', budgetService);
+            this.services.set('cashbackService', cashbackService);
 
             // Controllers
             const authController = new AuthController(authService);
             const paymentController = new PaymentController(paymentService);
             const billSplitController = new BillSplitController(billSplitService);
             const budgetController = new BudgetController(budgetService);
+            const cashbackController = new CashbackController(cashbackService);
 
             this.services.set('authController', authController);
             this.services.set('paymentController', paymentController);
             this.services.set('billSplitController', billSplitController);
             this.services.set('budgetController', budgetController);
+            this.services.set('cashbackController', cashbackController);
 
             this.initialized = true;
             console.log('Container initialized successfully');

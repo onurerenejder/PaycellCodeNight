@@ -8,9 +8,17 @@ const Transaction = require('../domain/Transaction');
 const { v4: uuidv4 } = require('uuid');
 
 class PaymentService {
-    constructor(walletRepository, transactionRepository) {
+    constructor(walletRepository, transactionRepository, cashbackService = null) {
         this.walletRepository = walletRepository;
         this.transactionRepository = transactionRepository;
+        this.cashbackService = cashbackService;
+    }
+
+    /**
+     * Set cashback service (for circular dependency resolution)
+     */
+    setCashbackService(cashbackService) {
+        this.cashbackService = cashbackService;
     }
 
     /**
@@ -219,6 +227,17 @@ class PaymentService {
 
             await this.walletRepository.transaction(operations);
 
+            // Apply cashback if service is available
+            let cashbackResult = null;
+            if (this.cashbackService) {
+                cashbackResult = await this.cashbackService.calculateAndApplyCashback(
+                    userId,
+                    merchantId,
+                    amount,
+                    txId
+                );
+            }
+
             return {
                 success: true,
                 message: 'Ödeme başarılı',
@@ -226,7 +245,8 @@ class PaymentService {
                     transactionId: txId,
                     amount,
                     merchantId,
-                    newBalance: wallet.balance - amount
+                    newBalance: wallet.balance - amount,
+                    cashback: cashbackResult
                 }
             };
 

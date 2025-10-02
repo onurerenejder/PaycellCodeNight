@@ -15,6 +15,7 @@ const createAuthRoutes = require('./routes/auth');
 const createPaymentRoutes = require('./routes/payments');
 const createBillSplitRoutes = require('./routes/billSplits');
 const createBudgetRoutes = require('./routes/budgets');
+const createCashbackRoutes = require('./routes/cashback');
 
 class App {
     constructor() {
@@ -115,6 +116,7 @@ class App {
         this.app.use('/api/payments', createPaymentRoutes(this.container.get('paymentController')));
         this.app.use('/api/splits', createBillSplitRoutes(this.container.get('billSplitController')));
         this.app.use('/api/budgets', createBudgetRoutes(this.container.get('budgetController')));
+        this.app.use('/api/cashback', createCashbackRoutes(this.container.get('cashbackController')));
 
         // Serve frontend
         this.app.get('*', (req, res) => {
