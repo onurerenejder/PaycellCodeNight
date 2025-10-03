@@ -59,7 +59,7 @@ class App {
                 directives: {
                     defaultSrc: ["'self'"],
                     styleSrc: ["'self'", "'unsafe-inline'", "https://cdnjs.cloudflare.com"],
-                    scriptSrc: ["'self'"],
+                    scriptSrc: ["'self'", "https://cdn.jsdelivr.net"],
                     imgSrc: ["'self'", "data:", "https:"],
                     fontSrc: ["'self'", "https://cdnjs.cloudflare.com"],
                     mediaSrc: ["'self'", "data:"],

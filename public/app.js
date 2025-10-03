@@ -10,6 +10,8 @@ class DigitalPaymentApp {
         this.currentQRInfo = null;
         this.apiBaseUrl = '/api';
         this.currentBudgetMonth = new Date().toISOString().substring(0, 7); // YYYY-MM
+        this.spendingChart = null;
+        this.balanceHidden = localStorage.getItem('balanceHidden') === 'true';
 
         this.init();
     }
@@ -53,8 +55,22 @@ class DigitalPaymentApp {
         // Payment form removed - only QR payment available
 
         // Top up modal
-        document.getElementById('topUpBtn').addEventListener('click', () => {
+        document.getElementById('topUpBtnQuick').addEventListener('click', () => {
             this.showTopUpModal();
+        });
+
+        // Quick action buttons
+        document.querySelectorAll('.action-btn[data-tab]').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const tab = e.currentTarget.dataset.tab;
+                this.switchTab(tab);
+            });
+        });
+
+        // View all transactions button
+        document.querySelector('.view-all-btn').addEventListener('click', (e) => {
+            const tab = e.currentTarget.dataset.tab;
+            this.switchTab(tab);
         });
 
         document.getElementById('topUpForm').addEventListener('submit', (e) => {
@@ -72,6 +88,11 @@ class DigitalPaymentApp {
         // Balance refresh
         document.getElementById('refreshBalance').addEventListener('click', () => {
             this.loadBalance();
+        });
+
+        // Toggle balance visibility
+        document.getElementById('toggleBalanceBtn').addEventListener('click', () => {
+            this.toggleBalanceVisibility();
         });
 
         // Split type selector
@@ -139,6 +160,11 @@ class DigitalPaymentApp {
         // QR Payment form
         document.getElementById('qrPaymentForm').addEventListener('submit', (e) => {
             e.preventDefault();
+            this.showQRConfirmation();
+        });
+
+        // Confirm payment button
+        document.getElementById('confirmPaymentBtn').addEventListener('click', () => {
             this.handleQRPayment();
         });
 
@@ -278,8 +304,17 @@ class DigitalPaymentApp {
             document.getElementById('userName').textContent = this.currentUser.name;
         }
 
+        // Set initial toggle icon
+        const icon = document.querySelector('#toggleBalanceBtn i');
+        if (this.balanceHidden) {
+            icon.className = 'fas fa-eye-slash';
+        } else {
+            icon.className = 'fas fa-eye';
+        }
+
         // Load initial data
         await this.loadBalance();
+        await this.loadRecentTransactionsWidget();
         await this.loadSplitSummary();
         await this.loadActiveSplits();
     }
@@ -345,6 +380,7 @@ class DigitalPaymentApp {
                 this.showToast(response.message, 'success');
                 document.getElementById('transferForm').reset();
                 await this.loadBalance();
+                await this.loadRecentTransactionsWidget();
             } else {
                 this.showToast(response.message, 'error');
             }
@@ -416,6 +452,31 @@ class DigitalPaymentApp {
     }
 
     /**
+     * Show QR payment confirmation modal
+     */
+    showQRConfirmation() {
+        if (!this.currentQRInfo) {
+            this.showToast('Önce QR kodu arayın', 'error');
+            return;
+        }
+
+        const merchantNames = {
+            'M1': 'Kampüs Kafe',
+            'M2': 'Kampüs Market'
+        };
+
+        const merchantName = merchantNames[this.currentQRInfo.merchant_id] || this.currentQRInfo.merchant_id;
+
+        // Populate confirmation modal
+        document.getElementById('confirmMerchantName').textContent = merchantName;
+        document.getElementById('confirmAmount').textContent = `${this.currentQRInfo.amount.toFixed(2)} ${this.currentQRInfo.currency || 'TRY'}`;
+        document.getElementById('confirmQRId').textContent = this.currentQRInfo.qr_id;
+
+        // Show modal
+        document.getElementById('qrConfirmModal').classList.remove('hidden');
+    }
+
+    /**
      * Handle QR payment
      */
     async handleQRPayment() {
@@ -423,6 +484,9 @@ class DigitalPaymentApp {
             this.showToast('Önce QR kodu arayın', 'error');
             return;
         }
+
+        // Close confirmation modal
+        document.getElementById('qrConfirmModal').classList.add('hidden');
 
         this.showLoading(true);
 
@@ -432,9 +496,9 @@ class DigitalPaymentApp {
             });
 
             if (response.success) {
-                // Show cashback message if available
+                // Show special cashback notification if available
                 if (response.data.cashback && response.data.cashback.applied) {
-                    this.showToast(`${response.message} 🎉 ${response.data.cashback.message}`, 'success');
+                    this.showCashbackNotification(response.data.cashback, response.data.newBalance);
                 } else {
                     this.showToast(response.message, 'success');
                 }
@@ -517,6 +581,7 @@ class DigitalPaymentApp {
                 this.hideModal(document.getElementById('topUpModal'));
                 document.getElementById('topUpForm').reset();
                 await this.loadBalance();
+                await this.loadRecentTransactionsWidget();
             } else {
                 this.showToast(response.message, 'error');
             }
@@ -762,14 +827,51 @@ class DigitalPaymentApp {
             const response = await this.apiCall('GET', '/payments/balance');
 
             if (response.success) {
-                document.getElementById('balanceAmount').textContent =
-                    response.data.formattedBalance;
+                const balanceElement = document.getElementById('balanceAmount');
+                balanceElement.dataset.actualBalance = response.data.formattedBalance;
+
+                // Apply visibility setting
+                this.updateBalanceDisplay();
             } else {
                 console.error('Failed to load balance:', response.message);
             }
 
         } catch (error) {
             console.error('Load balance error:', error);
+        }
+    }
+
+    /**
+     * Toggle balance visibility
+     */
+    toggleBalanceVisibility() {
+        this.balanceHidden = !this.balanceHidden;
+        localStorage.setItem('balanceHidden', this.balanceHidden);
+
+        // Update icon
+        const icon = document.querySelector('#toggleBalanceBtn i');
+        if (this.balanceHidden) {
+            icon.className = 'fas fa-eye-slash';
+        } else {
+            icon.className = 'fas fa-eye';
+        }
+
+        this.updateBalanceDisplay();
+    }
+
+    /**
+     * Update balance display based on visibility setting
+     */
+    updateBalanceDisplay() {
+        const balanceElement = document.getElementById('balanceAmount');
+        const actualBalance = balanceElement.dataset.actualBalance;
+
+        if (this.balanceHidden) {
+            balanceElement.textContent = '••••••';
+            balanceElement.classList.add('balance-hidden');
+        } else {
+            balanceElement.textContent = actualBalance || '0.00 TL';
+            balanceElement.classList.remove('balance-hidden');
         }
     }
 
@@ -860,6 +962,63 @@ class DigitalPaymentApp {
     }
 
     /**
+     * Load recent transactions for widget
+     */
+    async loadRecentTransactionsWidget() {
+        try {
+            const response = await this.apiCall('GET', '/payments/history?page=1&pageSize=3');
+
+            if (response.success && response.data.transactions.length > 0) {
+                this.renderRecentTransactionsWidget(response.data.transactions);
+            } else {
+                document.getElementById('recentTransactionsWidget').innerHTML = `
+                    <p class="text-center text-secondary" style="padding: 20px;">Henüz işlem yok</p>
+                `;
+            }
+
+        } catch (error) {
+            console.error('Load recent transactions widget error:', error);
+        }
+    }
+
+    /**
+     * Render recent transactions widget
+     */
+    renderRecentTransactionsWidget(transactions) {
+        const container = document.getElementById('recentTransactionsWidget');
+
+        const typeIcons = {
+            'transfer_in': 'fa-arrow-down',
+            'transfer_out': 'fa-arrow-up',
+            'payment': 'fa-credit-card',
+            'topup': 'fa-plus-circle',
+            'cashback': 'fa-gift'
+        };
+
+        container.innerHTML = transactions.slice(0, 3).map(tx => {
+            const icon = typeIcons[tx.type] || 'fa-exchange-alt';
+            const isIncoming = ['transfer_in', 'topup', 'cashback'].includes(tx.type);
+            const amountClass = isIncoming ? 'amount-positive' : 'amount-negative';
+            const sign = isIncoming ? '+' : '-';
+
+            return `
+                <div class="transaction-mini-item">
+                    <div class="transaction-mini-icon ${tx.type}">
+                        <i class="fas ${icon}"></i>
+                    </div>
+                    <div class="transaction-mini-details">
+                        <div class="transaction-mini-desc">${tx.description}</div>
+                        <div class="transaction-mini-time">${new Date(tx.createdAt).toLocaleString('tr-TR', { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' })}</div>
+                    </div>
+                    <div class="transaction-mini-amount ${amountClass}">
+                        ${sign}${tx.amount.toFixed(2)} TL
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    /**
      * Load transaction history
      */
     async loadTransactionHistory() {
@@ -868,6 +1027,7 @@ class DigitalPaymentApp {
 
             if (response.success) {
                 this.renderTransactionHistory(response.data.transactions);
+                await this.loadSpendingChart();
             } else {
                 document.getElementById('transactionHistory').innerHTML = `
                     <p class="text-center text-secondary">İşlem geçmişi yüklenemedi</p>
@@ -880,6 +1040,135 @@ class DigitalPaymentApp {
                 <p class="text-center text-secondary">Hata: ${error.message}</p>
             `;
         }
+    }
+
+    /**
+     * Load spending chart data
+     */
+    async loadSpendingChart() {
+        try {
+            const currentMonth = new Date().toISOString().substring(0, 7);
+
+            // Get spending data by category
+            const response = await this.apiCall('GET', `/budgets?month=${currentMonth}`);
+
+            if (response.success && response.data.budgets.length > 0) {
+                const categoryData = response.data.budgets.map(b => ({
+                    category: b.category,
+                    spent: b.spentAmount
+                })).filter(d => d.spent > 0);
+
+                this.renderSpendingChart(categoryData);
+            } else {
+                this.renderEmptyChart();
+            }
+
+        } catch (error) {
+            console.error('Load spending chart error:', error);
+            this.renderEmptyChart();
+        }
+    }
+
+    /**
+     * Render spending pie chart
+     */
+    renderSpendingChart(categoryData) {
+        const canvas = document.getElementById('spendingChart');
+        const ctx = canvas.getContext('2d');
+
+        // Destroy existing chart if any
+        if (this.spendingChart) {
+            this.spendingChart.destroy();
+        }
+
+        const categoryColors = {
+            'cafe': '#f59e0b',
+            'market': '#10b981',
+            'ulaşım': '#3b82f6',
+            'eğlence': '#8b5cf6',
+            'sağlık': '#ef4444',
+            'diğer': '#6b7280'
+        };
+
+        const categoryLabels = {
+            'cafe': 'Kafe',
+            'market': 'Market',
+            'ulaşım': 'Ulaşım',
+            'eğlence': 'Eğlence',
+            'sağlık': 'Sağlık',
+            'diğer': 'Diğer'
+        };
+
+        const labels = categoryData.map(d => categoryLabels[d.category] || d.category);
+        const data = categoryData.map(d => d.spent);
+        const colors = categoryData.map(d => categoryColors[d.category] || '#6b7280');
+
+        this.spendingChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: data,
+                    backgroundColor: colors,
+                    borderColor: '#ffffff',
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false  // Custom legend kullanacağız
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function (context) {
+                                const label = context.label || '';
+                                const value = context.parsed || 0;
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = ((value / total) * 100).toFixed(1);
+                                return `${label}: ${value.toFixed(2)} TL (${percentage}%)`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Render custom legend
+        this.renderChartLegend(categoryData, categoryLabels, categoryColors);
+    }
+
+    /**
+     * Render custom chart legend
+     */
+    renderChartLegend(categoryData, categoryLabels, categoryColors) {
+        const legendContainer = document.getElementById('chartLegend');
+        const total = categoryData.reduce((sum, d) => sum + d.spent, 0);
+
+        legendContainer.innerHTML = categoryData.map(d => {
+            const percentage = ((d.spent / total) * 100).toFixed(1);
+            const color = categoryColors[d.category] || '#6b7280';
+            const label = categoryLabels[d.category] || d.category;
+
+            return `
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: ${color};"></div>
+                    <div class="legend-label">${label}</div>
+                    <div class="legend-value">${d.spent.toFixed(2)} TL</div>
+                    <div class="legend-percentage">${percentage}%</div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    /**
+     * Render empty chart placeholder
+     */
+    renderEmptyChart() {
+        const container = document.getElementById('spendingChart').parentElement;
+        container.innerHTML = '<p class="text-center text-secondary" style="padding: 40px;">Bu ay henüz harcama yapılmamış</p>';
     }
 
     /**
@@ -959,6 +1248,39 @@ class DigitalPaymentApp {
         } else {
             loading.classList.add('hidden');
         }
+    }
+
+    /**
+     * Show cashback notification (special styled)
+     */
+    showCashbackNotification(cashback, newBalance) {
+        const toast = document.getElementById('toast');
+        const icon = toast.querySelector('.toast-icon');
+        const messageEl = toast.querySelector('.toast-message');
+
+        icon.className = 'toast-icon fas fa-gift';
+        messageEl.innerHTML = `
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+                <div style="font-size: 16px; font-weight: 700;">
+                    🎉 ${cashback.cashbackAmount.toFixed(2)} TL Cashback!
+                </div>
+                <div style="font-size: 13px; opacity: 0.9;">
+                    ${cashback.message}
+                </div>
+                <div style="font-size: 13px; font-weight: 600; margin-top: 4px;">
+                    Yeni bakiye: ${newBalance.toFixed(2)} TL
+                </div>
+            </div>
+        `;
+        toast.className = 'toast success cashback-toast';
+
+        // Show toast
+        toast.classList.remove('hidden');
+
+        // Hide after 6 seconds (longer for cashback)
+        setTimeout(() => {
+            toast.classList.add('hidden');
+        }, 6000);
     }
 
     /**
@@ -1399,20 +1721,35 @@ class DigitalPaymentApp {
             const statusClass = this.getBudgetStatusByThreshold(percentage, budget.category);
             const icon = categoryIcons[budget.category] || 'fa-tag';
 
+            // Get thresholds for badge
+            const thresholds = this.getCategoryThresholds(budget.category);
+            let badge = '';
+
+            if (percentage >= thresholds.danger) {
+                badge = '<span class="budget-badge badge-danger"><i class="fas fa-exclamation-circle"></i> KRİTİK</span>';
+            } else if (percentage >= thresholds.warning) {
+                badge = '<span class="budget-badge badge-warning"><i class="fas fa-exclamation-triangle"></i> DİKKAT</span>';
+            } else if (percentage > 50) {
+                badge = '<span class="budget-badge badge-info"><i class="fas fa-info-circle"></i> NORMAL</span>';
+            }
+
             return `
                 <div class="budget-item ${statusClass}">
                     <div class="budget-icon">
                         <i class="fas ${icon}"></i>
                     </div>
                     <div class="budget-details">
-                        <div class="budget-category">${budget.category.charAt(0).toUpperCase() + budget.category.slice(1)}</div>
+                        <div class="budget-header-row">
+                            <div class="budget-category">${budget.category.charAt(0).toUpperCase() + budget.category.slice(1)}</div>
+                            ${badge}
+                        </div>
                         <div class="budget-amounts">
                             <span class="spent">${budget.spentAmount.toFixed(2)} TL</span>
                             <span class="separator">/</span>
                             <span class="limit">${budget.limitAmount.toFixed(2)} TL</span>
                         </div>
                         <div class="progress-bar-container">
-                            <div class="progress-bar ${statusClass}" style="width: ${budget.percentage}%;"></div>
+                            <div class="progress-bar ${statusClass}" style="width: ${Math.min(percentage, 100)}%;"></div>
                         </div>
                         <div class="budget-info-row">
                             <span class="remaining">Kalan: ${budget.remaining.toFixed(2)} TL</span>

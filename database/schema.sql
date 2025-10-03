@@ -126,7 +126,47 @@ INSERT OR IGNORE INTO p2p_contacts (user_id, contact_user_id, favorite) VALUES
 ('U1', 'U2', 1),
 ('U1', 'U3', 0);
 
+-- Demo Budgets (multiple users, multiple months)
 INSERT OR IGNORE INTO budgets (user_id, month, category, limit_amount, spent_amount) VALUES 
-('U1', '2025-10', 'cafe', 200.0, 120.0),
-('U1', '2025-10', 'market', 300.0, 50.0);
+-- U1 (Ayşe) - October 2025
+('U1', '2025-10', 'cafe', 200.0, 0.0),
+('U1', '2025-10', 'market', 300.0, 0.0),
+('U1', '2025-10', 'ulaşım', 150.0, 0.0),
+-- U1 (Ayşe) - November 2025
+('U1', '2025-11', 'cafe', 180.0, 0.0),
+('U1', '2025-11', 'market', 320.0, 0.0),
+('U1', '2025-11', 'eğlence', 100.0, 0.0),
+-- U2 (Ali) - October 2025
+('U2', '2025-10', 'cafe', 100.0, 0.0),
+('U2', '2025-10', 'market', 200.0, 0.0),
+-- U3 (Deniz) - October 2025
+('U3', '2025-10', 'cafe', 80.0, 0.0),
+('U3', '2025-10', 'ulaşım', 120.0, 0.0);
+
+-- Demo Transactions (realistic payment history)
+INSERT OR IGNORE INTO transactions (tx_id, created_at, user_id, merchant_id, amount, currency, type, status, meta) VALUES 
+-- U1 Cafe payments (September - old data)
+('TX_PAY_001', '2025-09-15T10:30:00Z', 'U1', 'M1', 15.50, 'TRY', 'payment', 'ok', '{"payment_method":"qr_code","qr_id":"QR-M1-001"}'),
+('TX_PAY_002', '2025-09-18T14:20:00Z', 'U1', 'M1', 22.00, 'TRY', 'payment', 'ok', '{"payment_method":"qr_code","qr_id":"QR-M1-002"}'),
+-- U1 Market payments (September)
+('TX_PAY_003', '2025-09-20T16:45:00Z', 'U1', 'M2', 45.75, 'TRY', 'payment', 'ok', '{"payment_method":"qr_code","qr_id":"QR-M2-001"}'),
+-- U1 October payments
+('TX_PAY_004', '2025-10-01T09:15:00Z', 'U1', 'M1', 18.50, 'TRY', 'payment', 'ok', '{"payment_method":"qr_code","qr_id":"QR-M1-001"}'),
+('TX_PAY_005', '2025-10-03T12:30:00Z', 'U1', 'M2', 32.00, 'TRY', 'payment', 'ok', '{"payment_method":"qr_code","qr_id":"QR-M2-002"}'),
+('TX_PAY_006', '2025-10-05T15:45:00Z', 'U1', 'M1', 12.75, 'TRY', 'payment', 'ok', '{"payment_method":"qr_code","qr_id":"QR-M1-002"}'),
+-- U1 Cashback transactions (October)
+('TX_CB_001', '2025-10-01T09:15:05Z', 'U1', 'M1', 0.93, 'TRY', 'cashback', 'ok', '{"rule_id":"CB1","original_tx_id":"TX_PAY_004","description":"Kampüs Kafe - %5 Cashback"}'),
+('TX_CB_002', '2025-10-05T15:45:05Z', 'U1', 'M1', 0.64, 'TRY', 'cashback', 'ok', '{"rule_id":"CB1","original_tx_id":"TX_PAY_006","description":"Kampüs Kafe - %5 Cashback"}'),
+-- U2 transactions
+('TX_PAY_007', '2025-10-02T11:00:00Z', 'U2', 'M1', 25.50, 'TRY', 'payment', 'ok', '{"payment_method":"qr_code","qr_id":"QR-M1-001"}'),
+('TX_CB_003', '2025-10-02T11:00:05Z', 'U2', NULL, 20.00, 'TRY', 'cashback', 'ok', '{"rule_id":"CB2","original_tx_id":"TX_PAY_007","description":"İlk QR Ödeme Bonusu - 20 TL"}'),
+('TX_CB_004', '2025-10-02T11:00:06Z', 'U2', 'M1', 1.28, 'TRY', 'cashback', 'ok', '{"rule_id":"CB1","original_tx_id":"TX_PAY_007","description":"Kampüs Kafe - %5 Cashback"}'),
+('TX_PAY_008', '2025-10-04T13:20:00Z', 'U2', 'M2', 18.00, 'TRY', 'payment', 'ok', '{"payment_method":"qr_code","qr_id":"QR-M2-001"}'),
+-- U3 transactions
+('TX_PAY_009', '2025-10-01T08:30:00Z', 'U3', 'M1', 12.75, 'TRY', 'payment', 'ok', '{"payment_method":"qr_code","qr_id":"QR-M1-002"}'),
+('TX_CB_005', '2025-10-01T08:30:05Z', 'U3', NULL, 20.00, 'TRY', 'cashback', 'ok', '{"rule_id":"CB2","original_tx_id":"TX_PAY_009","description":"İlk QR Ödeme Bonusu - 20 TL"}'),
+('TX_CB_006', '2025-10-01T08:30:06Z', 'U3', 'M1', 0.64, 'TRY', 'cashback', 'ok', '{"rule_id":"CB1","original_tx_id":"TX_PAY_009","description":"Kampüs Kafe - %5 Cashback"}'),
+-- Top-up transactions
+('TX_TOP_001', '2025-10-01T08:00:00Z', 'U2', NULL, 100.00, 'TRY', 'topup', 'ok', '{"payment_method":"bank_transfer"}'),
+('TX_TOP_002', '2025-10-02T09:00:00Z', 'U3', NULL, 50.00, 'TRY', 'topup', 'ok', '{"payment_method":"bank_transfer"}');
 
