@@ -1,3 +1,0 @@
-tx_id,user_id,weight,share_amount,status
-TX1,U1,1,30.0,settled
-TX1,U2,1,30.0,pending

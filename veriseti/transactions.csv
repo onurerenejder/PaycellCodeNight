@@ -1,6 +1,0 @@
-tx_id,created_at,user_id,merchant_id,amount,currency,type,status,meta
-TX1,2025-10-10T12:00:00Z,U1,M1,60.0,TRY,payment,ok,"{""qr_id"":""QR-1""}"
-TX2,2025-10-10T12:05:00Z,U1,,60.0,TRY,cashback,ok,"{""rule_id"":""CB1""}"
-TX3,2025-10-11T09:00:00Z,U2,,100.0,TRY,topup,ok,{}
-TX4,2025-10-11T10:00:00Z,U1,,30.0,TRY,transfer_out,ok,"{""to_user"":""U3""}"
-TX5,2025-10-11T10:00:00Z,U3,,30.0,TRY,transfer_in,ok,"{""from_user"":""U1""}"
